@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貸借対照表シミュレーター</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  max-width: 600px;
+  margin: auto;
+  padding: 10px;
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.card {
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.left { background: #e3f2fd; }
+.right { background: #ffebee; }
+
+.big { font-size: 20px; font-weight: bold; }
+</style>
+</head>
+
+<body>
+
+<h2>入力</h2>
+
+B: <input id="B" type="number">
+S: <input id="S" type="number">
+T: <input id="T" type="number">
+
+V: <input id="V" type="number">
+r1: <input id="r1" type="number" step="0.01">
+r2: <input id="r2" type="number" step="0.01">
+
+<button onclick="calc()">計算</button>
+
+<div id="output"></div>
+
+<script>
+async function calc() {
+
+  const B = Number(B.value);
+  const S = Number(S.value);
+  const T = Number(T.value);
+  const V = Number(V.value);
+  const r1 = Number(r1.value);
+  const r2 = Number(r2.value);
+
+  // O（シミュレーション対象）
+  const O = (B - S) / T;
+
+  // B1
+  const B1 = (B * V - O);
+
+  const res = await fetch("【GASのURL】", {
+    method: "POST",
+    body: JSON.stringify({ B1, V, r1, r2 })
+  });
+
+  const data = await res.json();
+
+  const M1 = data.M1;
+  const M2 = data.M2;
+
+  // マイナス回避
+  const fixedAssets = Math.max(M1, 0);
+  const currentAssets = Math.max(B - M1, 0);
+
+  const capital = Math.max(M2, 0);
+  const currentLiabilities = Math.max(B - M2, 0);
+
+  document.getElementById("output").innerHTML = `
+    <h3>O（シミュレーション値）</h3>
+    <div class="big">${O.toFixed(3)}</div>
+
+    <h3>貸借対照表</h3>
+
+    <div class="card left">
+      <b>借方（資産）</b><br>
+      流動資産: ${currentAssets.toFixed(2)}<br>
+      固定資産: ${fixedAssets.toFixed(2)}
+    </div>
+
+    <div class="card right">
+      <b>貸方（負債・資本）</b><br>
+      流動負債: ${currentLiabilities.toFixed(2)}<br>
+      資本金: ${capital.toFixed(2)}
+    </div>
+  `;
+}
+</script>
+
+</body>
+</html>
+
