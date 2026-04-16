@@ -37,43 +37,48 @@ input, button {
 
 <h2>入力</h2>
 
-B: <input id="B" type="number">
-S: <input id="S" type="number">
-T: <input id="T" type="number">
+B: <input id="B" type="number" value="100">
+S: <input id="S" type="number" value="20">
+T: <input id="T" type="number" value="2">
 
-V: <input id="V" type="number">
-r1: <input id="r1" type="number" step="0.01">
-r2: <input id="r2" type="number" step="0.01">
+V: <input id="V" type="number" value="1.5">
+r1: <input id="r1" type="number" step="0.01" value="0.5">
+r2: <input id="r2" type="number" step="0.01" value="0.8">
 
 <button onclick="calc()">計算</button>
 
 <div id="output"></div>
 
 <script>
-async function calc() {
+function calc() {
 
-  const B = Number(B.value);
-  const S = Number(S.value);
-  const T = Number(T.value);
-  const V = Number(V.value);
-  const r1 = Number(r1.value);
-  const r2 = Number(r2.value);
+  const B = Number(document.getElementById("B").value);
+  const S = Number(document.getElementById("S").value);
+  const T = Number(document.getElementById("T").value);
+  const V = Number(document.getElementById("V").value);
+  const r1 = Number(document.getElementById("r1").value);
+  const r2 = Number(document.getElementById("r2").value);
 
-  // O（シミュレーション対象）
+  // 入力チェック
+  if (!B || !T || !V) {
+    alert("必須項目を入力してください");
+    return;
+  }
+
+  if (T === 0) {
+    alert("Tは0にできません");
+    return;
+  }
+
+  // O
   const O = (B - S) / T;
 
   // B1
   const B1 = (B * V - O);
 
-  const res = await fetch("https://script.google.com/macros/s/AKfycbz7SppAdJWZ9IK9z3XR2q3kMZsa-jj3BpH65pthR91quHssND2ec1bbjzwLIlcIMErGQg/exec", {
-    method: "POST",
-    body: JSON.stringify({ B1, V, r1, r2 })
-  });
-
-  const data = await res.json();
-
-  const M1 = data.M1;
-  const M2 = data.M2;
+  // ★ GASなしで直接計算（ここが今回のポイント）
+  const M1 = B1 / (V * Math.exp(-r1 * 0.95));
+  const M2 = B1 / (V * Math.exp(-r2 * 0.95));
 
   // マイナス回避
   const fixedAssets = Math.max(M1, 0);
@@ -105,4 +110,3 @@ async function calc() {
 
 </body>
 </html>
-
