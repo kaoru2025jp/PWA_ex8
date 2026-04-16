@@ -12,22 +12,18 @@ body {
   margin: auto;
   padding: 10px;
 }
-
 input {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
 }
-
 .card {
   border-radius: 10px;
   padding: 15px;
   margin-top: 10px;
 }
-
 .left { background: #e3f2fd; }
 .right { background: #ffebee; }
-
 .big { font-size: 20px; font-weight: bold; }
 </style>
 </head>
@@ -38,15 +34,15 @@ input {
 
 B: <input id="B" type="number" value="100" oninput="calc()">
 S: <input id="S" type="number" value="20" oninput="calc()">
-T: <input id="T" type="number" value="2" oninput="calc()">
+
+<!-- ★ここがシミュレーション対象 -->
+T: <input type="range" min="0.5" max="5" step="0.1" id="T" value="2" oninput="calc()">
+<span id="Tv">2</span>
 
 V: <input id="V" type="number" value="1.5" oninput="calc()">
 
-r1: <input type="range" min="0" max="2" step="0.01" id="r1" value="0.5" oninput="calc()">
-<span id="r1v">0.5</span>
-
-r2: <input type="range" min="0" max="2" step="0.01" id="r2" value="0.8" oninput="calc()">
-<span id="r2v">0.8</span>
+r1: <input id="r1" type="number" value="0.5" step="0.01" oninput="calc()">
+r2: <input id="r2" type="number" value="0.8" step="0.01" oninput="calc()">
 
 <div id="output"></div>
 
@@ -54,27 +50,24 @@ r2: <input type="range" min="0" max="2" step="0.01" id="r2" value="0.8" oninput=
 let timer;
 
 function calc() {
-
-  // ★連続通信防止（重要）
   clearTimeout(timer);
   timer = setTimeout(runCalc, 200);
 }
 
 async function runCalc() {
 
-  const B = Number(document.getElementById("B").value);
-  const S = Number(document.getElementById("S").value);
-  const T = Number(document.getElementById("T").value);
-  const V = Number(document.getElementById("V").value);
-  const r1 = Number(document.getElementById("r1").value);
-  const r2 = Number(document.getElementById("r2").value);
+  const B = Number(B.value);
+  const S = Number(S.value);
+  const T = Number(T.value);
+  const V = Number(V.value);
+  const r1 = Number(r1.value);
+  const r2 = Number(r2.value);
 
-  document.getElementById("r1v").innerText = r1;
-  document.getElementById("r2v").innerText = r2;
+  document.getElementById("Tv").innerText = T;
 
   if (!B || !T || !V) return;
-  if (T === 0) return;
 
+  // ★ここが本来のシミュレーション
   const O = (B - S) / T;
   const B1 = (B * V - O);
 
@@ -123,7 +116,6 @@ async function runCalc() {
   }
 }
 
-// 初期表示
 runCalc();
 </script>
 
