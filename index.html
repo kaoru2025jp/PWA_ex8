@@ -13,11 +13,10 @@ body {
   padding: 10px;
 }
 
-input, button {
+input {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
-  font-size: 16px;
 }
 
 .card {
@@ -37,20 +36,31 @@ input, button {
 
 <h2>入力</h2>
 
-B: <input id="B" type="number" value="100">
-S: <input id="S" type="number" value="20">
-T: <input id="T" type="number" value="2">
+B: <input id="B" type="number" value="100" oninput="calc()">
+S: <input id="S" type="number" value="20" oninput="calc()">
+T: <input id="T" type="number" value="2" oninput="calc()">
 
-V: <input id="V" type="number" value="1.5">
-r1: <input id="r1" type="number" step="0.01" value="0.5">
-r2: <input id="r2" type="number" step="0.01" value="0.8">
+V: <input id="V" type="number" value="1.5" oninput="calc()">
 
-<button onclick="calc()">計算</button>
+r1: <input type="range" min="0" max="2" step="0.01" id="r1" value="0.5" oninput="calc()">
+<span id="r1v">0.5</span>
+
+r2: <input type="range" min="0" max="2" step="0.01" id="r2" value="0.8" oninput="calc()">
+<span id="r2v">0.8</span>
 
 <div id="output"></div>
 
 <script>
+let timer;
+
 function calc() {
+
+  // ★連続通信防止（重要）
+  clearTimeout(timer);
+  timer = setTimeout(runCalc, 200);
+}
+
+async function runCalc() {
 
   const B = Number(document.getElementById("B").value);
   const S = Number(document.getElementById("S").value);
@@ -59,53 +69,62 @@ function calc() {
   const r1 = Number(document.getElementById("r1").value);
   const r2 = Number(document.getElementById("r2").value);
 
-  // 入力チェック
-  if (!B || !T || !V) {
-    alert("必須項目を入力してください");
-    return;
-  }
+  document.getElementById("r1v").innerText = r1;
+  document.getElementById("r2v").innerText = r2;
 
-  if (T === 0) {
-    alert("Tは0にできません");
-    return;
-  }
+  if (!B || !T || !V) return;
+  if (T === 0) return;
 
-  // O
   const O = (B - S) / T;
-
-  // B1
   const B1 = (B * V - O);
 
-  // ★ GASなしで直接計算（ここが今回のポイント）
-  const M1 = B1 / (V * Math.exp(-r1 * 0.95));
-  const M2 = B1 / (V * Math.exp(-r2 * 0.95));
+  try {
 
-  // マイナス回避
-  const fixedAssets = Math.max(M1, 0);
-  const currentAssets = Math.max(B - M1, 0);
+    const res = await fetch("★GASのURL★", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ B1, V, r1, r2 })
+    });
 
-  const capital = Math.max(M2, 0);
-  const currentLiabilities = Math.max(B - M2, 0);
+    const data = await res.json();
 
-  document.getElementById("output").innerHTML = `
-    <h3>O（シミュレーション値）</h3>
-    <div class="big">${O.toFixed(3)}</div>
+    const M1 = data.M1;
+    const M2 = data.M2;
 
-    <h3>貸借対照表</h3>
+    const fixedAssets = Math.max(M1, 0);
+    const currentAssets = Math.max(B - M1, 0);
 
-    <div class="card left">
-      <b>借方（資産）</b><br>
-      流動資産: ${currentAssets.toFixed(2)}<br>
-      固定資産: ${fixedAssets.toFixed(2)}
-    </div>
+    const capital = Math.max(M2, 0);
+    const currentLiabilities = Math.max(B - M2, 0);
 
-    <div class="card right">
-      <b>貸方（負債・資本）</b><br>
-      流動負債: ${currentLiabilities.toFixed(2)}<br>
-      資本金: ${capital.toFixed(2)}
-    </div>
-  `;
+    document.getElementById("output").innerHTML = `
+      <h3>O（シミュレーション値）</h3>
+      <div class="big">${O.toFixed(3)}</div>
+
+      <h3>貸借対照表</h3>
+
+      <div class="card left">
+        <b>借方（資産）</b><br>
+        流動資産: ${currentAssets.toFixed(2)}<br>
+        固定資産: ${fixedAssets.toFixed(2)}
+      </div>
+
+      <div class="card right">
+        <b>貸方（負債・資本）</b><br>
+        流動負債: ${currentLiabilities.toFixed(2)}<br>
+        資本金: ${capital.toFixed(2)}
+      </div>
+    `;
+
+  } catch (e) {
+    console.log(e);
+  }
 }
+
+// 初期表示
+runCalc();
 </script>
 
 </body>
