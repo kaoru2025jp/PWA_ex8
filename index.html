@@ -27,68 +27,90 @@ r2 <input id="r2"><br>
 <table border="1">
 <tr><th>借方</th><th>貸方</th></tr>
 <tr>
-<td id="left1"></td>
-<td id="right1"></td>
+  <td id="L1"></td>
+  <td id="R1"></td>
 </tr>
 <tr>
-<td id="left2"></td>
-<td id="right2"></td>
+  <td id="L2"></td>
+  <td id="R2"></td>
 </tr>
 </table>
 
 <script>
-let O_fixed = null;
 
+// ===== 状態 =====
+var O_fixed = null;
+
+// ===== O計算 =====
 function calcO() {
-  const B = Number(document.getElementById("B").value);
-  const S = Number(document.getElementById("S").value);
-  const T = Number(document.getElementById("T").value);
+  var B = Number(document.getElementById("B").value);
+  var S = Number(document.getElementById("S").value);
+  var T = Number(document.getElementById("T").value);
 
   O_fixed = (B - S) / T;
   document.getElementById("O").innerHTML = O_fixed;
 }
 
-async function calcBS() {
+// ===== 貸借対照表 =====
+function calcBS() {
 
   if (O_fixed === null) {
     alert("先にOを計算してください");
     return;
   }
 
-  document.getElementById("status").innerHTML = "送信中...";
+  var status = document.getElementById("status");
+  status.innerHTML = "送信中";
 
-  const B = Number(document.getElementById("B").value);
-  const V = Number(document.getElementById("V").value);
-  const r1 = Number(document.getElementById("r1").value);
-  const r2 = Number(document.getElementById("r2").value);
+  var B = Number(document.getElementById("B").value);
+  var V = Number(document.getElementById("V").value);
+  var r1 = Number(document.getElementById("r1").value);
+  var r2 = Number(document.getElementById("r2").value);
 
-  const B1 = B * V - O_fixed;
+  var B1 = B * V - O_fixed;
 
-  try {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbyciJrvsTLRBK1wCeR_mYY1JSMUbeMaaNVasifq35lur8Yv8takWGtQthrxpUmNqaxavw/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ V, r1, r2, B1 })
-    });
+  fetch("GASのURLをここに貼る", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ V: V, r1: r1, r2: r2, B1: B1 })
+  })
+  .then(function(res) {
+    return res.text();
+  })
+  .then(function(text) {
 
-    const text = await res.text(); // ←一旦生で受ける
-    document.getElementById("status").innerHTML = "受信成功: " + text;
+    status.innerHTML = text;
 
-    const data = JSON.parse(text);
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      status.innerHTML = "JSONエラー: " + text;
+      return;
+    }
 
-    const M1 = data.M1;
-    const M2 = data.M2;
+    if (data.M1 === undefined || data.M2 === undefined) {
+      status.innerHTML = "データ不正: " + text;
+      return;
+    }
 
-    document.getElementById("left1").innerHTML = B - M1;
-    document.getElementById("left2").innerHTML = M1;
-    document.getElementById("right1").innerHTML = B - M2;
-    document.getElementById("right2").innerHTML = M2;
+    var M1 = Number(data.M1);
+    var M2 = Number(data.M2);
 
-  } catch (e) {
-    document.getElementById("status").innerHTML = "エラー: " + e;
-  }
+    // 表示（ここだけ）
+    document.getElementById("L1").innerHTML = B - M1;
+    document.getElementById("L2").innerHTML = M1;
+    document.getElementById("R1").innerHTML = B - M2;
+    document.getElementById("R2").innerHTML = M2;
+
+  })
+  .catch(function(e) {
+    status.innerHTML = "通信エラー";
+  });
 }
+
 </script>
 
 </body>
 </html>
+
