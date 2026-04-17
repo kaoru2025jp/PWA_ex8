@@ -3,71 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <title>計算システム</title>
-<style>
-body { font-family: sans-serif; padding: 20px; }
-input { display: block; margin: 5px 0; }
-table { margin-top: 20px; border-collapse: collapse; }
-td, th { border: 1px solid #000; padding: 8px; }
-button { margin-top: 10px; }
-</style>
 </head>
 
 <body>
 
 <h2>入力</h2>
 
-<label>B <input id="B"></label>
-<label>S <input id="S"></label>
-<label>T <input id="T"></label>
-<label>V <input id="V"></label>
-<label>r1 <input id="r1"></label>
-<label>r2 <input id="r2"></label>
+B <input id="B"><br>
+S <input id="S"><br>
+T <input id="T"><br>
+V <input id="V"><br>
+r1 <input id="r1"><br>
+r2 <input id="r2"><br>
 
-<!-- ① O計算 -->
 <button onclick="calcO()">① Oを計算</button>
+<div>O: <span id="O"></span></div>
 
-<h3>O（確定値）</h3>
-<div id="O"></div>
+<button onclick="calcBS()">② 貸借対照表</button>
 
-<!-- ② 貸借対照表 -->
-<button onclick="calcBS()">② 貸借対照表を出力</button>
+<div id="status"></div>
 
 <h3>貸借対照表</h3>
-<table>
+<table border="1">
+<tr><th>借方</th><th>貸方</th></tr>
 <tr>
-  <th>借方</th>
-  <th>貸方</th>
+<td id="left1"></td>
+<td id="right1"></td>
 </tr>
 <tr>
-  <td id="left1"></td>
-  <td id="right1"></td>
-</tr>
-<tr>
-  <td id="left2"></td>
-  <td id="right2"></td>
+<td id="left2"></td>
+<td id="right2"></td>
 </tr>
 </table>
 
 <script>
 let O_fixed = null;
 
-// ① O確定
 function calcO() {
   const B = Number(document.getElementById("B").value);
   const S = Number(document.getElementById("S").value);
   const T = Number(document.getElementById("T").value);
 
   O_fixed = (B - S) / T;
-  document.getElementById("O").textContent = O_fixed;
+  document.getElementById("O").innerHTML = O_fixed;
 }
 
-// ② 貸借対照表
 async function calcBS() {
 
   if (O_fixed === null) {
     alert("先にOを計算してください");
     return;
   }
+
+  document.getElementById("status").innerHTML = "送信中...";
 
   const B = Number(document.getElementById("B").value);
   const V = Number(document.getElementById("V").value);
@@ -76,23 +64,31 @@ async function calcBS() {
 
   const B1 = B * V - O_fixed;
 
-  const res = await fetch("https://script.google.com/macros/s/AKfycbxtAw-42iyjpxZteHLTQgC2PztE4l_gfa4WwDdZwVnUe8vCBT6TpKh8v7nvStiKT-V8Gg/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ V, r1, r2, B1 })
-  });
+  try {
+    const res = await fetch("GASのURLをここに貼る", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ V, r1, r2, B1 })
+    });
 
-  const data = await res.json();
-  const M1 = data.M1;
-  const M2 = data.M2;
+    const text = await res.text(); // ←一旦生で受ける
+    document.getElementById("status").innerHTML = "受信成功: " + text;
 
-  document.getElementById("left1").textContent = B - M1;
-  document.getElementById("left2").textContent = M1;
-  document.getElementById("right1").textContent = B - M2;
-  document.getElementById("right2").textContent = M2;
+    const data = JSON.parse(text);
+
+    const M1 = data.M1;
+    const M2 = data.M2;
+
+    document.getElementById("left1").innerHTML = B - M1;
+    document.getElementById("left2").innerHTML = M1;
+    document.getElementById("right1").innerHTML = B - M2;
+    document.getElementById("right2").innerHTML = M2;
+
+  } catch (e) {
+    document.getElementById("status").innerHTML = "エラー: " + e;
+  }
 }
 </script>
 
 </body>
 </html>
-
