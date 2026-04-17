@@ -65,7 +65,7 @@ async function calcBS() {
   const B1 = B * V - O_fixed;
 
   try {
-    const res = await fetch("GASのURLをここに貼る", {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbyciJrvsTLRBK1wCeR_mYY1JSMUbeMaaNVasifq35lur8Yv8takWGtQthrxpUmNqaxavw/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ V, r1, r2, B1 })
