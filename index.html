@@ -31,22 +31,17 @@ td {
 <body>
 
 <h3>① (B-S)/T = O</h3>
-
 B<input id="B" type="number" value="100" oninput="calc()">
 S<input id="S" type="number" value="20" oninput="calc()">
-
 T（0〜3）<br>
 <input type="range" id="T" min="0.01" max="3" step="0.01" value="1" oninput="calc()">
 <span id="Tval">1.00</span>
-
 <div>O: <span id="O"></span></div>
 
 <h3>② B×V - O = B1</h3>
-
 V<input id="V" type="number" value="1.5" oninput="calc()">
 r1<input id="r1" type="number" value="0.5" step="0.01" oninput="calc()">
 r2<input id="r2" type="number" value="0.8" step="0.01" oninput="calc()">
-
 <div>B1: <span id="B1"></span></div>
 
 <hr>
@@ -67,10 +62,9 @@ r2<input id="r2" type="number" value="0.8" step="0.01" oninput="calc()">
 </table>
 
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzew960oM2F8n_iTWmcsyKT09ILqgHREuyA8juTRm52lpe223BaSDZw5mdRpRxfpR87Rg/exec";
+const GAS_URL = "https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec";
 
-async function calc(){
-
+function calc(){
   const B = Number(document.getElementById("B").value);
   const S = Number(document.getElementById("S").value);
   const T = Number(document.getElementById("T").value);
@@ -80,35 +74,31 @@ async function calc(){
 
   document.getElementById("Tval").innerText = T.toFixed(2);
 
-  // ①
   const O = (B - S) / T;
   document.getElementById("O").innerText = O.toFixed(2);
 
-  // ②
   const B1 = B * V - O;
   document.getElementById("B1").innerText = B1.toFixed(2);
 
-  try{
-    const res = await fetch(GAS_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({B1,V,r1,r2})
-    });
-
-    const d = await res.json();
-
+  fetch(GAS_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({B1: B1, V: V, r1: r1, r2: r2})
+  })
+  .then(function(res){
+    return res.json();
+  })
+  .then(function(d){
     const M1 = d.M1;
     const M2 = d.M2;
 
-    // 貸借対照表
     document.getElementById("ca").innerText = (B - M1).toFixed(2);
     document.getElementById("fa").innerText = M1.toFixed(2);
     document.getElementById("cl").innerText = (B - M2).toFixed(2);
     document.getElementById("cap").innerText = M2.toFixed(2);
-
-  }catch(e){
-    console.log(e);
-  }
+  })
+  .catch(function(){
+  });
 }
 
 calc();
