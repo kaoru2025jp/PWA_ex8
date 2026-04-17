@@ -51,7 +51,7 @@ function run() {
 
   document.getElementById("status").innerHTML = "送信中";
 
-  fetch("GASのURL", {
+  fetch("https://script.google.com/macros/s/AKfycbz_rNcoIVssujFyfYqMrNb_tzMp3Eo9C5COivEC1aXNm1GBkI3eRRMKrkCUfEv-gFS8Zw/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ V: V, r1: r1, r2: r2, B1: B1 })
