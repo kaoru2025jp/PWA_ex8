@@ -61,7 +61,7 @@ async function runCalculation() {
   const B1 = B * V - O;
 
   // ③ GAS送信
-  const res = await fetch("GASのURLをここに貼る", {
+  const res = await fetch("https://script.google.com/macros/s/AKfycbxKoTYXvgmL26h4VmInZ5qEMU2RvUZyBa1RhEsgMYpZ_iTScrQdu16mMjcBUIjbVtq5cw/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ V, r1, r2, B1 })
