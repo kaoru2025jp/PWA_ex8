@@ -69,7 +69,7 @@ function calcBS() {
 
   var B1 = B * V - O_fixed;
 
-  fetch("GASのURLをここに貼る", {
+  fetch("https://script.google.com/macros/s/AKfycbyhGxGu1-2nnmiaf7zFFL_6mIwQX4YHgHzPNJH3lsoNEgWL6zxFkJbYdWjCLDZmaQZy_w/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ V: V, r1: r1, r2: r2, B1: B1 })
