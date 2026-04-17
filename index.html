@@ -2,12 +2,20 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>計算システム</title>
+<title>計算</title>
+<style>
+table {
+  border-collapse: collapse;
+}
+td, th {
+  border: 1px solid black;
+  padding: 8px;
+  text-align: center;
+}
+</style>
 </head>
 
 <body>
-
-<h2>入力</h2>
 
 B <input id="B"><br>
 S <input id="S"><br>
@@ -16,96 +24,56 @@ V <input id="V"><br>
 r1 <input id="r1"><br>
 r2 <input id="r2"><br>
 
-<button onclick="calcO()">① Oを計算</button>
-<div>O: <span id="O"></span></div>
-
-<button onclick="calcBS()">② 貸借対照表</button>
+<button onclick="run()">実行</button>
 
 <div id="status"></div>
 
 <h3>貸借対照表</h3>
-<table border="1">
+<table>
 <tr><th>借方</th><th>貸方</th></tr>
-<tr>
-  <td id="L1"></td>
-  <td id="R1"></td>
-</tr>
-<tr>
-  <td id="L2"></td>
-  <td id="R2"></td>
-</tr>
+<tr><td id="a"></td><td id="b"></td></tr>
+<tr><td id="c"></td><td id="d"></td></tr>
 </table>
 
 <script>
 
-// ===== 状態 =====
-var O_fixed = null;
+function run() {
 
-// ===== O計算 =====
-function calcO() {
   var B = Number(document.getElementById("B").value);
   var S = Number(document.getElementById("S").value);
   var T = Number(document.getElementById("T").value);
-
-  O_fixed = (B - S) / T;
-  document.getElementById("O").innerHTML = O_fixed;
-}
-
-// ===== 貸借対照表 =====
-function calcBS() {
-
-  if (O_fixed === null) {
-    alert("先にOを計算してください");
-    return;
-  }
-
-  var status = document.getElementById("status");
-  status.innerHTML = "送信中";
-
-  var B = Number(document.getElementById("B").value);
   var V = Number(document.getElementById("V").value);
   var r1 = Number(document.getElementById("r1").value);
   var r2 = Number(document.getElementById("r2").value);
 
-  var B1 = B * V - O_fixed;
+  var O = (B - S) / T;
+  var B1 = B * V - O;
 
-  fetch("https://script.google.com/macros/s/AKfycbyhGxGu1-2nnmiaf7zFFL_6mIwQX4YHgHzPNJH3lsoNEgWL6zxFkJbYdWjCLDZmaQZy_w/exec", {
+  document.getElementById("status").innerHTML = "送信中";
+
+  fetch("GASのURL", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ V: V, r1: r1, r2: r2, B1: B1 })
   })
-  .then(function(res) {
-    return res.text();
-  })
-  .then(function(text) {
+  .then(function(res){ return res.text(); })
+  .then(function(text){
 
-    status.innerHTML = text;
-
-    var data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      status.innerHTML = "JSONエラー: " + text;
-      return;
-    }
-
-    if (data.M1 === undefined || data.M2 === undefined) {
-      status.innerHTML = "データ不正: " + text;
-      return;
-    }
+    var data = JSON.parse(text);
 
     var M1 = Number(data.M1);
     var M2 = Number(data.M2);
 
-    // 表示（ここだけ）
-    document.getElementById("L1").innerHTML = B - M1;
-    document.getElementById("L2").innerHTML = M1;
-    document.getElementById("R1").innerHTML = B - M2;
-    document.getElementById("R2").innerHTML = M2;
+    document.getElementById("a").innerHTML = B - M1;
+    document.getElementById("b").innerHTML = B - M2;
+    document.getElementById("c").innerHTML = M1;
+    document.getElementById("d").innerHTML = M2;
+
+    document.getElementById("status").innerHTML = "完了";
 
   })
-  .catch(function(e) {
-    status.innerHTML = "通信エラー";
+  .catch(function(){
+    document.getElementById("status").innerHTML = "エラー";
   });
 }
 
