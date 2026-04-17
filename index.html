@@ -8,6 +8,7 @@ body { font-family: sans-serif; padding: 20px; }
 input { display: block; margin: 5px 0; }
 table { margin-top: 20px; border-collapse: collapse; }
 td, th { border: 1px solid #000; padding: 8px; }
+button { margin-top: 10px; }
 </style>
 </head>
 
@@ -22,10 +23,14 @@ td, th { border: 1px solid #000; padding: 8px; }
 <label>r1 <input id="r1"></label>
 <label>r2 <input id="r2"></label>
 
-<button onclick="runCalculation()">実行</button>
+<!-- ① O計算 -->
+<button onclick="calcO()">① Oを計算</button>
 
-<h3>O（表示）</h3>
+<h3>O（確定値）</h3>
 <div id="O"></div>
+
+<!-- ② 貸借対照表 -->
+<button onclick="calcBS()">② 貸借対照表を出力</button>
 
 <h3>貸借対照表</h3>
 <table>
@@ -44,24 +49,34 @@ td, th { border: 1px solid #000; padding: 8px; }
 </table>
 
 <script>
-async function runCalculation() {
+let O_fixed = null;
 
+// ① O確定
+function calcO() {
   const B = Number(document.getElementById("B").value);
   const S = Number(document.getElementById("S").value);
   const T = Number(document.getElementById("T").value);
+
+  O_fixed = (B - S) / T;
+  document.getElementById("O").textContent = O_fixed;
+}
+
+// ② 貸借対照表
+async function calcBS() {
+
+  if (O_fixed === null) {
+    alert("先にOを計算してください");
+    return;
+  }
+
+  const B = Number(document.getElementById("B").value);
   const V = Number(document.getElementById("V").value);
   const r1 = Number(document.getElementById("r1").value);
   const r2 = Number(document.getElementById("r2").value);
 
-  // ① O
-  const O = (B - S) / T;
-  document.getElementById("O").textContent = O;
+  const B1 = B * V - O_fixed;
 
-  // ② B1（非表示）
-  const B1 = B * V - O;
-
-  // ③ GAS送信
-  const res = await fetch("https://script.google.com/macros/s/AKfycbxKoTYXvgmL26h4VmInZ5qEMU2RvUZyBa1RhEsgMYpZ_iTScrQdu16mMjcBUIjbVtq5cw/exec", {
+  const res = await fetch("GASのURLをここに貼る", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ V, r1, r2, B1 })
@@ -71,7 +86,6 @@ async function runCalculation() {
   const M1 = data.M1;
   const M2 = data.M2;
 
-  // ④ 貸借対照表
   document.getElementById("left1").textContent = B - M1;
   document.getElementById("left2").textContent = M1;
   document.getElementById("right1").textContent = B - M2;
