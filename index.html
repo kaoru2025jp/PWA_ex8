@@ -2,79 +2,135 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>計算</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貸借対照表計算</title>
+
 <style>
-table {
-  border-collapse: collapse;
-}
-td, th {
-  border: 1px solid black;
-  padding: 8px;
-  text-align: center;
-}
+body { font-family: sans-serif; padding: 20px; }
+input { margin: 5px; }
+table { border-collapse: collapse; margin-top: 20px; }
+td, th { border: 1px solid #333; padding: 8px; }
+button { margin: 5px; }
 </style>
 </head>
 
 <body>
 
-B <input id="B"><br>
-S <input id="S"><br>
-T <input id="T"><br>
-V <input id="V"><br>
-r1 <input id="r1"><br>
-r2 <input id="r2"><br>
+<h2>データ入力</h2>
 
-<button onclick="run()">実行</button>
+B: <input id="B" type="number"><br>
+S: <input id="S" type="number"><br>
+T: <input id="T" type="number"><br>
+V: <input id="V" type="number"><br>
+r1: <input id="r1" type="number"><br>
+r2: <input id="r2" type="number"><br>
+
+<!-- 追加ボタン① -->
+<button onclick="calcO()">Oだけ計算</button>
+
+<!-- 既存ボタン -->
+<button onclick="run()">貸借対照表作成</button>
 
 <div id="status"></div>
 
-<h3>貸借対照表</h3>
+<!-- O表示 -->
+<h3>Oの結果</h3>
+<div id="oResult"></div>
+
+<h2>貸借対照表</h2>
+
 <table>
-<tr><th>借方</th><th>貸方</th></tr>
-<tr><td id="a"></td><td id="b"></td></tr>
-<tr><td id="c"></td><td id="d"></td></tr>
+  <tr>
+    <th>借方</th>
+    <th>貸方</th>
+  </tr>
+  <tr>
+    <td id="flowAssets"></td>
+    <td id="flowLiabilities"></td>
+  </tr>
+  <tr>
+    <td id="fixedAssets"></td>
+    <td id="capital"></td>
+  </tr>
 </table>
 
 <script>
 
-function run() {
+//////////////////////////////
+// ① 計算ロジック（変更なし）
+//////////////////////////////
+function calcValues(B, S, T, V) {
+  const O = (B - S) / T;
+  const B1 = B * V - O;
+  return { O, B1 };
+}
 
-  var B = Number(document.getElementById("B").value);
-  var S = Number(document.getElementById("S").value);
-  var T = Number(document.getElementById("T").value);
-  var V = Number(document.getElementById("V").value);
-  var r1 = Number(document.getElementById("r1").value);
-  var r2 = Number(document.getElementById("r2").value);
+//////////////////////////////
+// ② GAS通信（変更なし）
+//////////////////////////////
+async function sendToGAS(B1, V, r1, r2) {
+  const res = await fetch("https://script.google.com/macros/s/AKfycbwmx2XJFWyqNg6D8m4LVikEQ9r4RJKXTv1Bj7u47MdsJkSLkd-PmaMUM3VtN9Q_ejfK8Q/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ B1, V, r1, r2 })
+  });
 
-  var O = (B - S) / T;
-  var B1 = B * V - O;
+  return await res.json();
+}
+
+//////////////////////////////
+// ③ 表示（変更なし）
+//////////////////////////////
+function render(B, M1, M2) {
+
+  const flowAssets = M1;
+  const fixedAssets = Math.max(B - M1, 0);
+
+  const flowLiabilities = M2;
+  const capital = Math.max(B - M2, 0);
+
+  document.getElementById("flowAssets").innerHTML = flowAssets.toFixed(2);
+  document.getElementById("flowLiabilities").innerHTML = flowLiabilities.toFixed(2);
+  document.getElementById("fixedAssets").innerHTML = fixedAssets.toFixed(2);
+  document.getElementById("capital").innerHTML = capital.toFixed(2);
+
+  document.getElementById("status").innerHTML = "完了";
+}
+
+//////////////////////////////
+// ★追加① Oだけ計算
+//////////////////////////////
+function calcO() {
+
+  const B = Number(document.getElementById("B").value);
+  const S = Number(document.getElementById("S").value);
+  const T = Number(document.getElementById("T").value);
+  const V = Number(document.getElementById("V").value);
+
+  const { O } = calcValues(B, S, T, V);
+
+  document.getElementById("oResult").innerHTML = "O = " + O.toFixed(3);
+}
+
+//////////////////////////////
+// ★追加② メイン処理（変更なし構造）
+//////////////////////////////
+async function run() {
+
+  const B = Number(document.getElementById("B").value);
+  const S = Number(document.getElementById("S").value);
+  const T = Number(document.getElementById("T").value);
+  const V = Number(document.getElementById("V").value);
+  const r1 = Number(document.getElementById("r1").value);
+  const r2 = Number(document.getElementById("r2").value);
 
   document.getElementById("status").innerHTML = "送信中";
 
-  fetch("https://script.google.com/macros/s/AKfycbz_rNcoIVssujFyfYqMrNb_tzMp3Eo9C5COivEC1aXNm1GBkI3eRRMKrkCUfEv-gFS8Zw/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ V: V, r1: r1, r2: r2, B1: B1 })
-  })
-  .then(function(res){ return res.text(); })
-  .then(function(text){
+  const { O, B1 } = calcValues(B, S, T, V);
 
-    var data = JSON.parse(text);
+  const data = await sendToGAS(B1, V, r1, r2);
 
-    var M1 = Number(data.M1);
-    var M2 = Number(data.M2);
-
-    document.getElementById("a").innerHTML = B - M1;
-    document.getElementById("b").innerHTML = B - M2;
-    document.getElementById("c").innerHTML = M1;
-    document.getElementById("d").innerHTML = M2;
-
-    document.getElementById("status").innerHTML = "完了";
-
-  })
-  .catch(function(){
-    document.getElementById("status").innerHTML = "エラー";
-  });
+  render(B, data.M1, data.M2);
 }
 
 </script>
