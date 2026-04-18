@@ -3,138 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>貸借対照表計算</title>
+<title>財務シミュレーター</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { font-family: sans-serif; padding: 20px; }
-input { margin: 5px; }
-table { border-collapse: collapse; margin-top: 20px; }
-td, th { border: 1px solid #333; padding: 8px; }
-button { margin: 5px; }
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+
+input {
+  margin: 5px;
+}
+
+.slider-box {
+  margin: 10px 0;
+}
+
+#vValue {
+  font-weight: bold;
+}
+
+canvas {
+  max-width: 400px;
+  margin-top: 20px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>データ入力</h2>
+<h2>財務シミュレーター</h2>
 
 B: <input id="B" type="number"><br>
-S: <input id="S" type="number"><br>
-T: <input id="T" type="number"><br>
-V: <input id="V" type="number"><br>
-r1: <input id="r1" type="number"><br>
-r2: <input id="r2" type="number"><br>
+O: <input id="O" type="number"><br>
 
-<!-- 追加ボタン① -->
-<button onclick="calcO()">Oだけ計算</button>
+<div class="slider-box">
+V:
+<input id="V" type="range" min="0" max="1" step="0.01" value="0.5">
+<span id="vValue">0.50</span>
+</div>
 
-<!-- 既存ボタン -->
-<button onclick="run()">貸借対照表作成</button>
+r1（リスク1）:
+<input id="r1" type="range" min="0" max="1" step="0.01" value="0.3">
+<span id="r1v">0.30</span><br>
 
-<div id="status"></div>
+r2（リスク2）:
+<input id="r2" type="range" min="0" max="1" step="0.01" value="0.3">
+<span id="r2v">0.30</span>
 
-<!-- O表示 -->
-<h3>Oの結果</h3>
-<div id="oResult"></div>
+<h3>貸借対照表</h3>
 
-<h2>貸借対照表</h2>
+<div>
+流動資産: <span id="flowAssets">0</span><br>
+固定資産: <span id="fixedAssets">0</span><br>
+流動負債: <span id="flowLiabilities">0</span><br>
+資本金: <span id="capital">0</span>
+</div>
 
-<table>
-  <tr>
-    <th>借方</th>
-    <th>貸方</th>
-  </tr>
-  <tr>
-    <td id="flowAssets"></td>
-    <td id="flowLiabilities"></td>
-  </tr>
-  <tr>
-    <td id="fixedAssets"></td>
-    <td id="capital"></td>
-  </tr>
-</table>
+<h3>指標</h3>
+T1: <span id="T1">0</span><br>
+T2: <span id="T2">0</span>
+
+<h3>資産構成</h3>
+<canvas id="chart"></canvas>
 
 <script>
 
-//////////////////////////////
-// ① 計算ロジック（変更なし）
-//////////////////////////////
-function calcValues(B, S, T, V) {
-  const O = (B - S) / T;
-  const B1 = B * V - O;
-  return { O, B1 };
+const V = document.getElementById("V");
+const r1 = document.getElementById("r1");
+const r2 = document.getElementById("r2");
+
+// 円グラフ
+const ctx = document.getElementById("chart").getContext("2d");
+
+let chart = new Chart(ctx, {
+  type: "pie",
+  data: {
+    labels: ["流動資産", "固定資産"],
+    datasets: [{
+      data: [50, 50]
+    }]
+  }
+});
+
+// =========================
+// リスク解釈モデル
+// =========================
+// r1 → 流動性リスク（大きいほど流動資産減る）
+// r2 → 財務安定リスク（大きいほど資本減る）
+
+function update() {
+
+  const B = Number(document.getElementById("B").value || 0);
+  const O = Number(document.getElementById("O").value || 1);
+
+  const v = Number(V.value);
+  const r1v = Number(r1.value);
+  const r2v = Number(r2.value);
+
+  document.getElementById("vValue").innerText = v.toFixed(2);
+  document.getElementById("r1v").innerText = r1v.toFixed(2);
+  document.getElementById("r2v").innerText = r2v.toFixed(2);
+
+  // =========================
+  // コアモデル
+  // =========================
+
+  // 流動資産（効率 × リスク減少）
+  const flowAssets = B * v * (1 - r1v);
+
+  // 固定資産（残り）
+  const fixedAssets = Math.max(B - flowAssets, 0);
+
+  // 負債
+  const flowLiabilities = B * (1 - v);
+
+  // 資本（リスクで減衰）
+  const capital = Math.max(B - flowLiabilities * (1 + r2v), 0);
+
+  const T1 = fixedAssets / (O || 1);
+  const T2 = capital / (O || 1);
+
+  // 表示更新
+  document.getElementById("flowAssets").innerText = flowAssets.toFixed(2);
+  document.getElementById("fixedAssets").innerText = fixedAssets.toFixed(2);
+  document.getElementById("flowLiabilities").innerText = flowLiabilities.toFixed(2);
+  document.getElementById("capital").innerText = capital.toFixed(2);
+
+  document.getElementById("T1").innerText = T1.toFixed(3);
+  document.getElementById("T2").innerText = T2.toFixed(3);
+
+  // =========================
+  // 円グラフ更新
+  // =========================
+  chart.data.datasets[0].data = [
+    flowAssets,
+    fixedAssets
+  ];
+  chart.update();
 }
 
-//////////////////////////////
-// ② GAS通信（変更なし）
-//////////////////////////////
-async function sendToGAS(B1, V, r1, r2) {
-  const res = await fetch("https://script.google.com/macros/s/AKfycbwmx2XJFWyqNg6D8m4LVikEQ9r4RJKXTv1Bj7u47MdsJkSLkd-PmaMUM3VtN9Q_ejfK8Q/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ B1, V, r1, r2 })
-  });
+// イベント
+V.addEventListener("input", update);
+r1.addEventListener("input", update);
+r2.addEventListener("input", update);
+document.getElementById("B").addEventListener("input", update);
+document.getElementById("O").addEventListener("input", update);
 
-  return await res.json();
-}
-
-//////////////////////////////
-// ③ 表示（変更なし）
-//////////////////////////////
-function render(B, M1, M2) {
-
-  const flowAssets = M1;
-  const fixedAssets = Math.max(B - M1, 0);
-
-  const flowLiabilities = M2;
-  const capital = Math.max(B - M2, 0);
-
-  document.getElementById("flowAssets").innerHTML = flowAssets.toFixed(2);
-  document.getElementById("flowLiabilities").innerHTML = flowLiabilities.toFixed(2);
-  document.getElementById("fixedAssets").innerHTML = fixedAssets.toFixed(2);
-  document.getElementById("capital").innerHTML = capital.toFixed(2);
-
-  document.getElementById("status").innerHTML = "完了";
-}
-
-//////////////////////////////
-// ★追加① Oだけ計算
-//////////////////////////////
-function calcO() {
-
-  const B = Number(document.getElementById("B").value);
-  const S = Number(document.getElementById("S").value);
-  const T = Number(document.getElementById("T").value);
-  const V = Number(document.getElementById("V").value);
-
-  const { O } = calcValues(B, S, T, V);
-
-  document.getElementById("oResult").innerHTML = "O = " + O.toFixed(3);
-}
-
-//////////////////////////////
-// ★追加② メイン処理（変更なし構造）
-//////////////////////////////
-async function run() {
-
-  const B = Number(document.getElementById("B").value);
-  const S = Number(document.getElementById("S").value);
-  const T = Number(document.getElementById("T").value);
-  const V = Number(document.getElementById("V").value);
-  const r1 = Number(document.getElementById("r1").value);
-  const r2 = Number(document.getElementById("r2").value);
-
-  document.getElementById("status").innerHTML = "送信中";
-
-  const { O, B1 } = calcValues(B, S, T, V);
-
-  const data = await sendToGAS(B1, V, r1, r2);
-
-  render(B, data.M1, data.M2);
-}
+// 初期化
+update();
 
 </script>
 
 </body>
 </html>
-
